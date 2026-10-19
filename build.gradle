@@ -1,0 +1,61 @@
+plugins {
+    // 1.21.11 is obfuscated, so it needs Loom's "remap" variant (the plain
+    // net.fabricmc.fabric-loom plugin is for the unobfuscated 26.x line).
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'maven-publish'
+}
+
+// "2.5.0+mc1.21.11" - keeps this jar distinguishable from the 26.2 build of the mod.
+version = "${project.mod_version}+mc${project.minecraft_version}".toString()
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Loom adds the essential maven repositories (Mojang, Fabric) automatically.
+    // Add extra repositories here only if you depend on another mod.
+}
+
+dependencies {
+    // To change the versions see the gradle.properties file.
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+    // Mojang's official names, so class/method names match the 26.x version of this mod.
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // NOTE: MixinExtras (com.llamalad7.mixinextras.*) does NOT need to be declared here.
+    // Fabric Loader bundles it, and we only use @ModifyExpressionValue from it (lightmap mixin).
+}
+
+processResources {
+    def version = project.version.toString()
+    inputs.property "version", version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
