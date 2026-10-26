@@ -4,6 +4,7 @@
   "version": "${version}",
   "name": "Vanilla Switcher",
   "description": "Single-button crystal-PvP visual preset: smooth fullbright, no fog, hard particle switch (explosions included), totem resize, render-distance presets, fire/shield offsets, armor HUD, and a settings screen in English, Russian and Mixed Russian.",
+  "icon": "assets/vanillaswitcher/icon.png",
   "authors": [
     "you"
   ],
