@@ -16,27 +16,17 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.resources.Identifier;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLKeyboard;
+import org.lwjgl.sdl.SDLScancode;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 
-/**
- * Vanilla Switcher
- * -----------------
- * A single button flips between "pure vanilla" and a crystal-PvP visual preset.
- * Everything it touches is a normal client-side render/option setting - nothing
- * here changes gameplay, so it's fine to run on any vanilla server including
- * anti-cheat protected ones like DonutSMP.
- */
 public class VanillaSwitcherClient implements ClientModInitializer {
-
     public static final String MOD_ID = "vanillaswitcher";
 
-    /** The two keys the user can bind from the settings screen. */
     public enum BindTarget {
-        /** Toggles crystal mode on/off. */
         ACTIVATE,
-        /** Opens the mod's settings screen. */
+
         MENU
     }
 
@@ -44,18 +34,12 @@ public class VanillaSwitcherClient implements ClientModInitializer {
     private static boolean active = false;
     private static boolean activateWasDown = false;
     private static boolean menuWasDown = false;
-    /** When non-null, the next key press is captured as the new bind for that target instead of being used normally. */
+
     private static BindTarget listeningFor = null;
 
-    // remembered vanilla state, restored exactly when switching back off
     private static Object prevParticles = null;
     private static int prevRenderDistance = -1;
 
-    // BactroMod-style lightmap multiplier. BactroMod uses a 1-15 gamma
-    // multiplier on the lightmap rather than changing the player's vanilla
-    // gamma option. The fade between 1 (vanilla) and the configured strength is
-    // one continuous value that is used for BOTH directions, so switching the mod
-    // on/off in the middle of a fade continues smoothly from where it currently is.
     private static final BrightnessTransition brightness = new BrightnessTransition();
 
     public static ModConfig getConfig() {
@@ -70,20 +54,14 @@ public class VanillaSwitcherClient implements ClientModInitializer {
     public void onInitializeClient() {
         config = ModConfig.load();
 
-        // Do not access mc.options here: Fabric client initialization happens before
-        // Minecraft has finished constructing its Options instance on 26.2.
         ClientTickEvents.END_CLIENT_TICK.register(VanillaSwitcherClient::onClientTick);
 
-        // The armor HUD is attached right after the vanilla hotbar so it is drawn in the same layer.
-        // That way it is dimmed together with the hotbar whenever a screen (inventory, chest, ...)
-        // is open. ("addLast" would draw it after the open screen, on top of the dark overlay.)
         HudElementRegistry.attachElementAfter(
                 VanillaHudElements.HOTBAR,
                 Identifier.fromNamespaceAndPath(MOD_ID, "armor_hud"),
                 VanillaSwitcherClient::renderArmorHud
         );
 
-        // The alert toast is meant to stay bright and on top of everything.
         HudElementRegistry.addLast(
                 Identifier.fromNamespaceAndPath(MOD_ID, "alert_toast"),
                 VanillaSwitcherClient::renderToast
@@ -112,15 +90,9 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         pollBinds(mc);
     }
 
-    /**
-     * Polls both binds. The "was down" state is tracked even while a screen is open so
-     * that a key which is still held when a screen closes doesn't fire a second time -
-     * but the binds only ever <i>act</i> when no screen is open (which also covers our
-     * own settings screen and the "press a key to bind" prompt).
-     */
     private static void pollBinds(Minecraft mc) {
-        boolean activateDown = isBindDown(mc, config.bindKeyCode);
-        boolean menuDown = isBindDown(mc, config.menuBindKeyCode);
+        boolean activateDown = isBindDown(config.bindKeyCode);
+        boolean menuDown = isBindDown(config.menuBindKeyCode);
 
         if (mc.gui.screen() == null && listeningFor == null) {
             if (activateDown && !activateWasDown) {
@@ -135,13 +107,10 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         menuWasDown = menuDown;
     }
 
-    private static boolean isBindDown(Minecraft mc, int keyCode) {
-        return keyCode != -1 && InputConstants.isKeyDown(mc.getWindow(), keyCode);
+    private static boolean isBindDown(int keyCode) {
+        return keyCode != -1 && InputConstants.isKeyDown(keyCode);
     }
 
-    // --- bind capture (used by the config screen) ---
-
-    /** Start capturing the next key press as the bind for {@code target}; pass {@code null} to stop listening. */
     public static void setListeningFor(BindTarget target) {
         listeningFor = target;
     }
@@ -154,12 +123,7 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         return listeningFor != null;
     }
 
-    /**
-     * Stores {@code glfwKeyCode} as the bind for whatever we're currently listening for
-     * and stops listening. Pass -1 to unbind. If the other bind already uses the same
-     * key it gets unbound, so one key press can never do both things at once.
-     */
-    public static void captureBindKey(int glfwKeyCode) {
+    public static void captureBindKey(int keyCode) {
         BindTarget target = listeningFor;
         listeningFor = null;
         if (target == null) {
@@ -167,13 +131,13 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         }
 
         if (target == BindTarget.ACTIVATE) {
-            config.bindKeyCode = glfwKeyCode;
-            if (glfwKeyCode != -1 && config.menuBindKeyCode == glfwKeyCode) {
+            config.bindKeyCode = keyCode;
+            if (keyCode != -1 && config.menuBindKeyCode == keyCode) {
                 config.menuBindKeyCode = -1;
             }
         } else {
-            config.menuBindKeyCode = glfwKeyCode;
-            if (glfwKeyCode != -1 && config.bindKeyCode == glfwKeyCode) {
+            config.menuBindKeyCode = keyCode;
+            if (keyCode != -1 && config.bindKeyCode == keyCode) {
                 config.bindKeyCode = -1;
             }
         }
@@ -188,37 +152,44 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         if (keyCode == -1) {
             return Text.NOT_BOUND.in(config.language);
         }
-        String name = GLFW.glfwGetKeyName(keyCode, 0);
-        if (name != null) {
+        if (keyCode >= SDLScancode.SDL_SCANCODE_F1 && keyCode <= SDLScancode.SDL_SCANCODE_F12) {
+            return "F" + (keyCode - SDLScancode.SDL_SCANCODE_F1 + 1);
+        }
+        if (keyCode >= SDLScancode.SDL_SCANCODE_F13 && keyCode <= SDLScancode.SDL_SCANCODE_F24) {
+            return "F" + (keyCode - SDLScancode.SDL_SCANCODE_F13 + 13);
+        }
+        String special = switch (keyCode) {
+            case SDLScancode.SDL_SCANCODE_LSHIFT -> "LEFT SHIFT";
+            case SDLScancode.SDL_SCANCODE_RSHIFT -> "RIGHT SHIFT";
+            case SDLScancode.SDL_SCANCODE_LCTRL -> "LEFT CTRL";
+            case SDLScancode.SDL_SCANCODE_RCTRL -> "RIGHT CTRL";
+            case SDLScancode.SDL_SCANCODE_LALT -> "LEFT ALT";
+            case SDLScancode.SDL_SCANCODE_RALT -> "RIGHT ALT";
+            case SDLScancode.SDL_SCANCODE_SPACE -> "SPACE";
+            case SDLScancode.SDL_SCANCODE_TAB -> "TAB";
+            case SDLScancode.SDL_SCANCODE_RETURN -> "ENTER";
+            case SDLScancode.SDL_SCANCODE_BACKSPACE -> "BACKSPACE";
+            case SDLScancode.SDL_SCANCODE_CAPSLOCK -> "CAPS LOCK";
+            case SDLScancode.SDL_SCANCODE_INSERT -> "INSERT";
+            case SDLScancode.SDL_SCANCODE_DELETE -> "DELETE";
+            case SDLScancode.SDL_SCANCODE_HOME -> "HOME";
+            case SDLScancode.SDL_SCANCODE_END -> "END";
+            case SDLScancode.SDL_SCANCODE_PAGEUP -> "PAGE UP";
+            case SDLScancode.SDL_SCANCODE_PAGEDOWN -> "PAGE DOWN";
+            case SDLScancode.SDL_SCANCODE_UP -> "UP";
+            case SDLScancode.SDL_SCANCODE_DOWN -> "DOWN";
+            case SDLScancode.SDL_SCANCODE_LEFT -> "LEFT";
+            case SDLScancode.SDL_SCANCODE_RIGHT -> "RIGHT";
+            default -> null;
+        };
+        if (special != null) {
+            return special;
+        }
+        String name = SDLKeyboard.SDL_GetScancodeName(keyCode);
+        if (name != null && !name.isEmpty()) {
             return name.toUpperCase();
         }
-        if (keyCode >= GLFW.GLFW_KEY_F1 && keyCode <= GLFW.GLFW_KEY_F25) {
-            return "F" + (keyCode - GLFW.GLFW_KEY_F1 + 1);
-        }
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_LEFT_SHIFT -> "LEFT SHIFT";
-            case GLFW.GLFW_KEY_RIGHT_SHIFT -> "RIGHT SHIFT";
-            case GLFW.GLFW_KEY_LEFT_CONTROL -> "LEFT CTRL";
-            case GLFW.GLFW_KEY_RIGHT_CONTROL -> "RIGHT CTRL";
-            case GLFW.GLFW_KEY_LEFT_ALT -> "LEFT ALT";
-            case GLFW.GLFW_KEY_RIGHT_ALT -> "RIGHT ALT";
-            case GLFW.GLFW_KEY_SPACE -> "SPACE";
-            case GLFW.GLFW_KEY_TAB -> "TAB";
-            case GLFW.GLFW_KEY_ENTER -> "ENTER";
-            case GLFW.GLFW_KEY_BACKSPACE -> "BACKSPACE";
-            case GLFW.GLFW_KEY_CAPS_LOCK -> "CAPS LOCK";
-            case GLFW.GLFW_KEY_INSERT -> "INSERT";
-            case GLFW.GLFW_KEY_DELETE -> "DELETE";
-            case GLFW.GLFW_KEY_HOME -> "HOME";
-            case GLFW.GLFW_KEY_END -> "END";
-            case GLFW.GLFW_KEY_PAGE_UP -> "PAGE UP";
-            case GLFW.GLFW_KEY_PAGE_DOWN -> "PAGE DOWN";
-            case GLFW.GLFW_KEY_UP -> "UP";
-            case GLFW.GLFW_KEY_DOWN -> "DOWN";
-            case GLFW.GLFW_KEY_LEFT -> "LEFT";
-            case GLFW.GLFW_KEY_RIGHT -> "RIGHT";
-            default -> "KEY " + keyCode;
-        };
+        return "KEY " + keyCode;
     }
 
     public static void toggle() {
@@ -294,9 +265,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
             mc.options.renderDistance().set(config.crystalRenderDistance);
         }
 
-        // Crystal/PvP players generally play with Smooth Lighting off for sharper, less blurred
-        // blocks; like Render Distance, this is a fixed on/off pair rather than "remember
-        // whatever it was", so deactivating always hands the player back the vanilla default.
         if (config.smoothLightingSwitch) {
             mc.options.ambientOcclusion().set(false);
         }
@@ -321,16 +289,8 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         fadeBrightness(false);
     }
 
-    /**
-     * Starts fading the lightmap multiplier towards the crystal strength (mod on) or back to
-     * vanilla (mod off). The fade always starts from the multiplier's <i>current</i> value, so
-     * switching the mod off (or back on) part-way through a fade reverses smoothly instead of
-     * jumping, and takes only as long as the remaining distance needs.
-     */
     private static void fadeBrightness(boolean crystalOn) {
         if (!config.smoothBrightness) {
-            // Feature disabled: keep the internal state at vanilla so it can never leave a stale
-            // value behind that would pop up later if the option is re-enabled.
             brightness.snapTo(BrightnessTransition.VANILLA);
             return;
         }
@@ -340,12 +300,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         brightness.fadeTo(target, strength, config.brightnessTransitionSeconds, System.nanoTime());
     }
 
-    /**
-     * Current BactroMod-style lightmap multiplier, from 1 (vanilla) to 15.
-     * <p>
-     * Deliberately NOT gated on {@link #isActive()}: when the mod is switched off the value has to
-     * keep fading down to 1, otherwise the brightness would snap back instantly.
-     */
     public static float brightnessMultiplier() {
         if (config == null || !config.smoothBrightness) {
             return 1.0f;
@@ -354,29 +308,22 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         return (float) Math.max(1.0, Math.min(15.0, value));
     }
 
-    // --- read by mixins ---
-
-    /** True when every kind of fog (lava, powder snow, blindness, darkness, water, atmospheric) should be suppressed. */
     public static boolean shouldDisableFog() {
         return active && config.noFog;
     }
 
-    /** True while the mod is on and "Totem Resize" is enabled (covers both totem sizes and the centered pop). */
     public static boolean shouldResizeTotem() {
         return active && config.resizeTotem;
     }
 
-    /** Size of the totem pop animation, 1.0 = vanilla. */
     public static float totemPopScale() {
         return config.totemPopScale;
     }
 
-    /** Size of a totem held in hand, 1.0 = vanilla. */
     public static float totemHandScale() {
         return config.totemHandScale;
     }
 
-    /** True while every particle should be blocked from spawning (including explosions). */
     public static boolean shouldDisableParticles() {
         return active && config.disableParticles;
     }
