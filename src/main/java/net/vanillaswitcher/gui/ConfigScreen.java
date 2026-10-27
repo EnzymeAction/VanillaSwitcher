@@ -17,7 +17,7 @@ import net.vanillaswitcher.VanillaSwitcherClient.BindTarget;
 import net.vanillaswitcher.config.ModConfig;
 import net.vanillaswitcher.lang.Language;
 import net.vanillaswitcher.lang.Text;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLScancode;
 
 import java.util.List;
 import java.util.Locale;
@@ -26,32 +26,14 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 
-/**
- * The settings screen. Everything sits in one scrolling list, split into sections with a
- * plain left-aligned text header above each one - no background box, matching vanilla's own
- * Video Settings screen (e.g. "Display", "Quality &amp; Performance") - rather than a divider
- * line. Only the Done button is pinned to the bottom:
- * <ol>
- *   <li>Visuals: particles, fog, fire/shield offsets, armor HUD, smooth lighting switch -
- *       paired two-to-a-row where the labels are short enough, same as vanilla's own Video
- *       Settings screen, with the longest label left full width</li>
- *   <li>Brightness</li>
- *   <li>Render Distance</li>
- *   <li>Totem</li>
- *   <li>Others: alert toast, language</li>
- *   <li>Binds: activate, open menu</li>
- * </ol>
- */
 public class ConfigScreen extends Screen {
-
-    /** Space reserved above the list for the title, and below it for the Done button. */
     private static final int HEADER_HEIGHT = 32;
     private static final int FOOTER_HEIGHT = 32;
 
     private final Screen parent;
     private ConfigList list;
     private Button doneButton;
-    /** Set by the language button; handled at the start of the next frame (never in the middle of a click). */
+
     private boolean rebuildPending = false;
 
     public ConfigScreen(Screen parent) {
@@ -65,7 +47,6 @@ public class ConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        // The list fills everything between the title and the Done button.
         list = new ConfigList(minecraft, width, height - HEADER_HEIGHT - FOOTER_HEIGHT, HEADER_HEIGHT,
                 () -> rebuildPending = true);
         this.addRenderableWidget(list);
@@ -80,10 +61,9 @@ public class ConfigScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (VanillaSwitcherClient.isListeningForBind()) {
-            // Esc clears the bind (like vanilla's Controls screen) instead of binding Esc itself.
-            int key = event.key() == GLFW.GLFW_KEY_ESCAPE ? -1 : event.key();
+            int key = event.key() == SDLScancode.SDL_SCANCODE_ESCAPE ? -1 : event.key();
             VanillaSwitcherClient.captureBindKey(key);
-            // Also refreshes the *other* button: binding a key that the other bind used unbinds it.
+
             list.refreshBindLabels();
             return true;
         }
@@ -110,15 +90,14 @@ public class ConfigScreen extends Screen {
     }
 
     static final class ConfigList extends ContainerObjectSelectionList<ConfigList.Entry> {
-
         static final int ROW_WIDTH = 310;
         private static final int ROW_HEIGHT = 25;
         private static final int BUTTON_HEIGHT = 20;
-        /** The language button always reads "Language: ..." regardless of the selected language. */
+
         private static final String LANGUAGE_LABEL = "Language: ";
-        /** The totem size sliders move in steps of 0.05 (so 0.40, 0.45, 0.50, ...). */
+
         private static final int SCALE_STEPS_PER_UNIT = 20;
-        /** Horizontal gap between two paired (half-width) toggles in the same row. */
+
         private static final int PAIR_GAP = 8;
 
         private final ModConfig cfg = VanillaSwitcherClient.getConfig();
@@ -126,10 +105,6 @@ public class ConfigScreen extends Screen {
         private Button activateBindButton;
         private Button menuBindButton;
 
-        /**
-         * The super constructor is (client, width, HEIGHT, Y, itemHeight) - this is the argument
-         * order used by vanilla and by Fabric API's own 26.2 list classes.
-         */
         ConfigList(Minecraft minecraft, int listWidth, int listHeight, int listY, Runnable onLanguageChanged) {
             super(minecraft, listWidth, listHeight, listY, ROW_HEIGHT);
             this.onLanguageChanged = onLanguageChanged;
@@ -142,7 +117,6 @@ public class ConfigScreen extends Screen {
             return ROW_WIDTH;
         }
 
-        /** Rebuilds every row (used after a language change). Same list widget, so the scroll position stays. */
         void rebuild() {
             clearEntries();
             populate();
@@ -151,10 +125,6 @@ public class ConfigScreen extends Screen {
         private void populate() {
             Language lang = cfg.language;
 
-            // --- Visuals ---
-            // Paired two-to-a-row (thinner, like vanilla's Quality & Performance grid) wherever
-            // the labels are short enough; Smooth Lighting Switch's label is too long for half
-            // width, so it stays a full-width row like "Weather Effect Radius" does in vanilla.
             addSectionHeader(Text.SECTION_VISUALS);
             addPairedToggles(
                     Text.PARTICLES, () -> cfg.disableParticles, v -> cfg.disableParticles = v,
@@ -166,7 +136,6 @@ public class ConfigScreen extends Screen {
             );
             addToggle(Text.SMOOTH_LIGHTING_SWITCH, () -> cfg.smoothLightingSwitch, v -> cfg.smoothLightingSwitch = v);
 
-            // --- Brightness ---
             addSectionHeader(Text.SECTION_BRIGHTNESS);
             addToggle(Text.SMOOTH_FULLBRIGHT, () -> cfg.smoothBrightness, v -> cfg.smoothBrightness = v);
             addSlider(
@@ -183,7 +152,6 @@ public class ConfigScreen extends Screen {
                     value -> value + Text.SECONDS_SUFFIX.in(lang)
             );
 
-            // --- Render Distance ---
             addSectionHeader(Text.SECTION_RENDER_DISTANCE);
             addToggle(Text.RENDER_DISTANCE_SWITCH, () -> cfg.switchRenderDistance, v -> cfg.switchRenderDistance = v);
             addSlider(
@@ -199,7 +167,6 @@ public class ConfigScreen extends Screen {
                     value -> Text.chunks(lang, value)
             );
 
-            // --- Totem ---
             addSectionHeader(Text.SECTION_TOTEM);
             addToggle(Text.TOTEM_RESIZE, () -> cfg.resizeTotem, v -> cfg.resizeTotem = v);
             addSlider(
@@ -217,20 +184,16 @@ public class ConfigScreen extends Screen {
                     ConfigList::formatScale
             );
 
-            // --- Others: whatever doesn't fit a category above ---
             addSectionHeader(Text.SECTION_OTHERS);
             addToggle(Text.ALERT_TOAST, () -> cfg.showAlertToast, v -> cfg.showAlertToast = v);
             addLanguageButton();
 
-            // --- Binds: last, so it doesn't get in the way of the settings above ---
             addSectionHeader(Text.SECTION_BINDS);
             activateBindButton = createBindButton(BindTarget.ACTIVATE);
             menuBindButton = createBindButton(BindTarget.MENU);
             addEntry(new WidgetEntry(activateBindButton));
             addEntry(new WidgetEntry(menuBindButton));
         }
-
-        // --- helpers for the two totem sliders ---
 
         private static int scaleToSteps(float scale) {
             return Math.round(scale * SCALE_STEPS_PER_UNIT);
@@ -244,17 +207,10 @@ public class ConfigScreen extends Screen {
             return String.format(Locale.ROOT, "%.2f", steps / (double) SCALE_STEPS_PER_UNIT);
         }
 
-        // --- row builders ---
-
         private void addToggle(Text label, BooleanSupplier get, Consumer<Boolean> set) {
             addEntry(new WidgetEntry(createToggleButton(label, get, set, ROW_WIDTH)));
         }
 
-        /**
-         * Two toggles side by side in one row, each half the usual width (minus a small gap
-         * between them) - the "thinner" layout vanilla uses in its Quality &amp; Performance
-         * grid, instead of one full-width row per toggle.
-         */
         private void addPairedToggles(Text leftLabel, BooleanSupplier leftGet, Consumer<Boolean> leftSet,
                                       Text rightLabel, BooleanSupplier rightGet, Consumer<Boolean> rightSet) {
             int halfWidth = (ROW_WIDTH - PAIR_GAP) / 2;
@@ -279,10 +235,6 @@ public class ConfigScreen extends Screen {
             return Component.literal(label.in(lang) + ": " + (on ? Text.ON : Text.OFF).in(lang));
         }
 
-        /**
-         * @param valueText turns the slider's integer value into the text shown after the label,
-         *                  e.g. 3 -> "3/15" or 8 -> "0.40"
-         */
         private void addSlider(Text label, int min, int max, int current,
                                IntConsumer setter, IntFunction<String> valueText) {
             String labelText = label.in(cfg.language);
@@ -316,8 +268,6 @@ public class ConfigScreen extends Screen {
             addEntry(new WidgetEntry(button));
         }
 
-        // --- key bind buttons ---
-
         private Button createBindButton(BindTarget target) {
             return Button.builder(
                     bindLabel(target),
@@ -346,12 +296,9 @@ public class ConfigScreen extends Screen {
             }
         }
 
-        // --- rows ---
-
         abstract static class Entry extends ContainerObjectSelectionList.Entry<Entry> {
         }
 
-        /** One full-width row holding a single widget (a toggle, a slider, or a button). */
         static final class WidgetEntry extends Entry {
             private final AbstractWidget widget;
 
@@ -378,11 +325,6 @@ public class ConfigScreen extends Screen {
             }
         }
 
-        /**
-         * One row holding two widgets side by side - the left one flush with the row's left
-         * edge, the right one flush with its right edge, a small gap between them. Used for the
-         * "thinner" paired toggles in the Visuals section.
-         */
         static final class PairedEntry extends Entry {
             private final AbstractWidget left;
             private final AbstractWidget right;
@@ -414,20 +356,6 @@ public class ConfigScreen extends Screen {
             }
         }
 
-        /**
-         * A section header row: plain left-aligned text, no background box - matching how
-         * vanilla's own Video Settings screen labels its groups ("Display",
-         * "Quality &amp; Performance", "Preferences") rather than a divider line or a filled
-         * box. Nothing to click or narrate.
-         * <p>
-         * The text sits at the bottom of its row rather than centered. Every row already has a
-         * fixed-size gap below it before the next row starts, so centering the text split that
-         * gap evenly above and below it; vanilla instead keeps a header close to the row right
-         * after it (its own section) and leaves the larger gap above it (the end of the
-         * previous section). Pinning the text to the bottom reproduces that: the small gap
-         * after comes only from the row's own trailing gap, while the big gap before is that
-         * same trailing gap plus all the empty space this row isn't using above the text.
-         */
         static final class SectionHeaderEntry extends Entry {
             private static final int TEXT_HEIGHT = 9;
 

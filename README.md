@@ -1,6 +1,6 @@
 # Vanilla Switcher
 
-A client-side Fabric mod for **Minecraft 26.2** that switches your game between plain vanilla and a
+A client-side Fabric mod for **Minecraft 26.3** that switches your game between plain vanilla and a
 crystal-PvP visual preset with a single key.
 
 Everything it changes is a client-side rendering or option setting. It never touches gameplay,
@@ -63,7 +63,7 @@ everything else takes effect immediately.
 
 ## Installation
 
-Requires Minecraft 26.2, [Fabric Loader](https://fabricmc.net/use/) 0.19.3 or newer and
+Requires Minecraft 26.3, [Fabric Loader](https://fabricmc.net/use/) 0.19.5 or newer and
 [Fabric API](https://modrinth.com/mod/fabric-api).
 
 Put the mod jar into your `mods` folder.

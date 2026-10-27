@@ -5,13 +5,14 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "MixinParticleEngine",
-    "MixinLightTexture",
+    "MixinLightmapRenderStateExtractor",
     "HudAccessor",
     "MixinFogRenderer",
-    "MixinItemInHandRenderer",
+    "MixinFirstPersonHandsAndItemsRenderer",
     "MixinScreenEffectRenderer",
     "MixinTotemPopSize",
-    "MixinTotemPopPosition"
+    "MixinItemActivation",
+    "MixinLocalPlayer"
   ],
   "injectors": {
     "defaultRequire": 0
