@@ -20,23 +20,11 @@ import org.lwjgl.glfw.GLFW;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
-/**
- * Vanilla Switcher
- * -----------------
- * A single button flips between "pure vanilla" and a crystal-PvP visual preset.
- * Everything it touches is a normal client-side render/option setting - nothing
- * here changes gameplay, so it's fine to run on any vanilla server including
- * anti-cheat protected ones like DonutSMP.
- */
 public class VanillaSwitcherClient implements ClientModInitializer {
-
     public static final String MOD_ID = "vanillaswitcher";
 
-    /** The two keys the user can bind from the settings screen. */
     public enum BindTarget {
-        /** Toggles crystal mode on/off. */
         ACTIVATE,
-        /** Opens the mod's settings screen. */
         MENU
     }
 
@@ -44,18 +32,16 @@ public class VanillaSwitcherClient implements ClientModInitializer {
     private static boolean active = false;
     private static boolean activateWasDown = false;
     private static boolean menuWasDown = false;
-    /** When non-null, the next key press is captured as the new bind for that target instead of being used normally. */
     private static BindTarget listeningFor = null;
 
-    // remembered vanilla state, restored exactly when switching back off
     private static Object prevParticles = null;
     private static int prevRenderDistance = -1;
+    private static Boolean prevBobView = null;
+    private static Double prevScreenEffectScale = null;
+    private static Double prevFovEffectScale = null;
+    private static Double prevDarknessEffectScale = null;
+    private static Double prevDamageTiltStrength = null;
 
-    // BactroMod-style lightmap multiplier. BactroMod uses a 1-15 gamma
-    // multiplier on the lightmap rather than changing the player's vanilla
-    // gamma option. The fade between 1 (vanilla) and the configured strength is
-    // one continuous value that is used for BOTH directions, so switching the mod
-    // on/off in the middle of a fade continues smoothly from where it currently is.
     private static final BrightnessTransition brightness = new BrightnessTransition();
 
     public static ModConfig getConfig() {
@@ -70,20 +56,14 @@ public class VanillaSwitcherClient implements ClientModInitializer {
     public void onInitializeClient() {
         config = ModConfig.load();
 
-        // Do not access mc.options here: Fabric client initialization happens before
-        // Minecraft has finished constructing its Options instance.
         ClientTickEvents.END_CLIENT_TICK.register(VanillaSwitcherClient::onClientTick);
 
-        // The armor HUD is attached right after the vanilla hotbar so it is drawn in the same layer.
-        // That way it is dimmed together with the hotbar whenever a screen (inventory, chest, ...)
-        // is open. ("addLast" would draw it after the open screen, on top of the dark overlay.)
         HudElementRegistry.attachElementAfter(
                 VanillaHudElements.HOTBAR,
                 Identifier.fromNamespaceAndPath(MOD_ID, "armor_hud"),
                 VanillaSwitcherClient::renderArmorHud
         );
 
-        // The alert toast is meant to stay bright and on top of everything.
         HudElementRegistry.addLast(
                 Identifier.fromNamespaceAndPath(MOD_ID, "alert_toast"),
                 VanillaSwitcherClient::renderToast
@@ -112,12 +92,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         pollBinds(mc);
     }
 
-    /**
-     * Polls both binds. The "was down" state is tracked even while a screen is open so
-     * that a key which is still held when a screen closes doesn't fire a second time -
-     * but the binds only ever <i>act</i> when no screen is open (which also covers our
-     * own settings screen and the "press a key to bind" prompt).
-     */
     private static void pollBinds(Minecraft mc) {
         boolean activateDown = isBindDown(mc, config.bindKeyCode);
         boolean menuDown = isBindDown(mc, config.menuBindKeyCode);
@@ -139,9 +113,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         return keyCode != -1 && InputConstants.isKeyDown(mc.getWindow(), keyCode);
     }
 
-    // --- bind capture (used by the config screen) ---
-
-    /** Start capturing the next key press as the bind for {@code target}; pass {@code null} to stop listening. */
     public static void setListeningFor(BindTarget target) {
         listeningFor = target;
     }
@@ -154,11 +125,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         return listeningFor != null;
     }
 
-    /**
-     * Stores {@code glfwKeyCode} as the bind for whatever we're currently listening for
-     * and stops listening. Pass -1 to unbind. If the other bind already uses the same
-     * key it gets unbound, so one key press can never do both things at once.
-     */
     public static void captureBindKey(int glfwKeyCode) {
         BindTarget target = listeningFor;
         listeningFor = null;
@@ -294,14 +260,59 @@ public class VanillaSwitcherClient implements ClientModInitializer {
             mc.options.renderDistance().set(config.crystalRenderDistance);
         }
 
-        // Crystal/PvP players generally play with Smooth Lighting off for sharper, less blurred
-        // blocks; like Render Distance, this is a fixed on/off pair rather than "remember
-        // whatever it was", so deactivating always hands the player back the vanilla default.
         if (config.smoothLightingSwitch) {
             mc.options.ambientOcclusion().set(false);
         }
 
+        applyAccessibility(mc);
+
         fadeBrightness(true);
+    }
+
+    private static void applyAccessibility(Minecraft mc) {
+        if (config.disableViewBobbing) {
+            prevBobView = mc.options.bobView().get();
+            mc.options.bobView().set(false);
+        }
+        if (config.disableDistortionEffects) {
+            prevScreenEffectScale = mc.options.screenEffectScale().get();
+            mc.options.screenEffectScale().set(0.0);
+        }
+        if (config.disableFovEffects) {
+            prevFovEffectScale = mc.options.fovEffectScale().get();
+            mc.options.fovEffectScale().set(0.0);
+        }
+        if (config.disableDarknessPulsing) {
+            prevDarknessEffectScale = mc.options.darknessEffectScale().get();
+            mc.options.darknessEffectScale().set(0.0);
+        }
+        if (config.disableDamageTilt) {
+            prevDamageTiltStrength = mc.options.damageTiltStrength().get();
+            mc.options.damageTiltStrength().set(0.0);
+        }
+    }
+
+    private static void restoreAccessibility(Minecraft mc) {
+        if (prevBobView != null) {
+            mc.options.bobView().set(prevBobView);
+            prevBobView = null;
+        }
+        if (prevScreenEffectScale != null) {
+            mc.options.screenEffectScale().set(prevScreenEffectScale);
+            prevScreenEffectScale = null;
+        }
+        if (prevFovEffectScale != null) {
+            mc.options.fovEffectScale().set(prevFovEffectScale);
+            prevFovEffectScale = null;
+        }
+        if (prevDarknessEffectScale != null) {
+            mc.options.darknessEffectScale().set(prevDarknessEffectScale);
+            prevDarknessEffectScale = null;
+        }
+        if (prevDamageTiltStrength != null) {
+            mc.options.damageTiltStrength().set(prevDamageTiltStrength);
+            prevDamageTiltStrength = null;
+        }
     }
 
     private static void restoreVanillaMode(Minecraft mc) {
@@ -318,19 +329,13 @@ public class VanillaSwitcherClient implements ClientModInitializer {
             mc.options.ambientOcclusion().set(true);
         }
 
+        restoreAccessibility(mc);
+
         fadeBrightness(false);
     }
 
-    /**
-     * Starts fading the lightmap multiplier towards the crystal strength (mod on) or back to
-     * vanilla (mod off). The fade always starts from the multiplier's <i>current</i> value, so
-     * switching the mod off (or back on) part-way through a fade reverses smoothly instead of
-     * jumping, and takes only as long as the remaining distance needs.
-     */
     private static void fadeBrightness(boolean crystalOn) {
         if (!config.smoothBrightness) {
-            // Feature disabled: keep the internal state at vanilla so it can never leave a stale
-            // value behind that would pop up later if the option is re-enabled.
             brightness.snapTo(BrightnessTransition.VANILLA);
             return;
         }
@@ -340,12 +345,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         brightness.fadeTo(target, strength, config.brightnessTransitionSeconds, System.nanoTime());
     }
 
-    /**
-     * Current BactroMod-style lightmap multiplier, from 1 (vanilla) to 15.
-     * <p>
-     * Deliberately NOT gated on {@link #isActive()}: when the mod is switched off the value has to
-     * keep fading down to 1, otherwise the brightness would snap back instantly.
-     */
     public static float brightnessMultiplier() {
         if (config == null || !config.smoothBrightness) {
             return 1.0f;
@@ -354,29 +353,22 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         return (float) Math.max(1.0, Math.min(15.0, value));
     }
 
-    // --- read by mixins ---
-
-    /** True when every kind of fog (lava, powder snow, blindness, darkness, water, atmospheric) should be suppressed. */
     public static boolean shouldDisableFog() {
         return active && config.noFog;
     }
 
-    /** True while the mod is on and "Totem Resize" is enabled (covers both totem sizes and the centered pop). */
     public static boolean shouldResizeTotem() {
         return active && config.resizeTotem;
     }
 
-    /** Size of the totem pop animation, 1.0 = vanilla. */
     public static float totemPopScale() {
         return config.totemPopScale;
     }
 
-    /** Size of a totem held in hand, 1.0 = vanilla. */
     public static float totemHandScale() {
         return config.totemHandScale;
     }
 
-    /** True while every particle should be blocked from spawning (including explosions). */
     public static boolean shouldDisableParticles() {
         return active && config.disableParticles;
     }
