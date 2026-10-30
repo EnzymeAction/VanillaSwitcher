@@ -22,23 +22,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.material.FogType;
 
-/**
- * Suppresses every kind of fog (lava, powder snow, blindness, darkness, water,
- * atmospheric) behind a single toggle.
- * <p>
- * Injection point, locals and the FogData reset values follow BactroMod's own fog mixin as it was
- * on Minecraft 1.21.11. Two differences from the 26.2 version of this mod:
- * <ul>
- *   <li>On 1.21.11 {@code setupFog} returns a {@code Vector4f} (the fog colour), not a
- *       {@code FogData}.</li>
- *   <li>Locals are captured positionally ({@link LocalCapture#CAPTURE_FAILHARD}) instead of with
- *       MixinExtras' {@code @Local(name = ...)}: the obfuscated 1.21.11 jar has no local variable
- *       names, so by-name capture cannot work there.</li>
- * </ul>
- */
 @Mixin(value = FogRenderer.class, priority = 1500)
 public abstract class MixinFogRenderer {
-
     @Shadow
     @Final
     private static List<FogEnvironment> FOG_ENVIRONMENTS;
@@ -62,8 +47,6 @@ public abstract class MixinFogRenderer {
                 fog.renderDistanceStart = Float.MAX_VALUE;
                 fog.renderDistanceEnd = Float.MAX_VALUE;
 
-                // atmospheric fog (index 5) still needs a sane sky/cloud cutoff,
-                // everything else can just be pushed out to "never happens".
                 fog.skyEnd = i == 5 ? Mth.clamp(renderDistanceInBlocks, 2 * 16, 32 * 16) : Float.MAX_VALUE;
                 fog.cloudEnd = i == 5 ? Minecraft.getInstance().options.cloudRange().get() * 16 : Float.MAX_VALUE;
 
