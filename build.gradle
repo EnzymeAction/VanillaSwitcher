@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 
-version = project.mod_version
+version = "${project.mod_version}+mc${project.minecraft_version}".toString()
 group = project.maven_group
 
 base {
@@ -15,13 +15,14 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 processResources {
-    def version = project.version
+    def version = project.version.toString()
     inputs.property "version", version
 
     filesMatching("fabric.mod.json") {

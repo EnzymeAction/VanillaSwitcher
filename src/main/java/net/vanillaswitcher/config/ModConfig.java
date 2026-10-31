@@ -33,17 +33,19 @@ public class ModConfig {
 
     public boolean noFog = true;
 
+    public boolean disableViewBobbing = true;
+    public boolean disableDistortionEffects = true;
+    public boolean disableFovEffects = true;
+    public boolean disableDarknessPulsing = true;
+    public boolean disableDamageTilt = true;
+
     @SerializedName(value = "resizeTotem", alternate = {"resizeTotemPop"})
     public boolean resizeTotem = true;
-
     public float totemHandScale = 1.0f;
-
     public float totemPopScale = 0.5f;
 
     public boolean smoothBrightness = true;
-
     public int crystalBrightness = 3;
-
     public float brightnessTransitionSeconds = 3.0f;
 
     public boolean switchRenderDistance = true;

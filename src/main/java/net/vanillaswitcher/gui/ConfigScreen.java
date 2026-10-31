@@ -33,7 +33,6 @@ public class ConfigScreen extends Screen {
     private final Screen parent;
     private ConfigList list;
     private Button doneButton;
-
     private boolean rebuildPending = false;
 
     public ConfigScreen(Screen parent) {
@@ -63,7 +62,6 @@ public class ConfigScreen extends Screen {
         if (VanillaSwitcherClient.isListeningForBind()) {
             int key = event.key() == SDLScancode.SDL_SCANCODE_ESCAPE ? -1 : event.key();
             VanillaSwitcherClient.captureBindKey(key);
-
             list.refreshBindLabels();
             return true;
         }
@@ -93,11 +91,8 @@ public class ConfigScreen extends Screen {
         static final int ROW_WIDTH = 310;
         private static final int ROW_HEIGHT = 25;
         private static final int BUTTON_HEIGHT = 20;
-
         private static final String LANGUAGE_LABEL = "Language: ";
-
         private static final int SCALE_STEPS_PER_UNIT = 20;
-
         private static final int PAIR_GAP = 8;
 
         private final ModConfig cfg = VanillaSwitcherClient.getConfig();
@@ -135,6 +130,17 @@ public class ConfigScreen extends Screen {
                     Text.ARMOR_HUD, () -> cfg.showArmorHud, v -> cfg.showArmorHud = v
             );
             addToggle(Text.SMOOTH_LIGHTING_SWITCH, () -> cfg.smoothLightingSwitch, v -> cfg.smoothLightingSwitch = v);
+
+            addSectionHeader(Text.SECTION_ACCESSIBILITY);
+            addPairedToggles(
+                    Text.VIEW_BOBBING, () -> cfg.disableViewBobbing, v -> cfg.disableViewBobbing = v,
+                    Text.DISTORTION_EFFECTS, () -> cfg.disableDistortionEffects, v -> cfg.disableDistortionEffects = v
+            );
+            addPairedToggles(
+                    Text.FOV_EFFECTS, () -> cfg.disableFovEffects, v -> cfg.disableFovEffects = v,
+                    Text.DARKNESS_PULSING, () -> cfg.disableDarknessPulsing, v -> cfg.disableDarknessPulsing = v
+            );
+            addToggle(Text.DAMAGE_TILT, () -> cfg.disableDamageTilt, v -> cfg.disableDamageTilt = v);
 
             addSectionHeader(Text.SECTION_BRIGHTNESS);
             addToggle(Text.SMOOTH_FULLBRIGHT, () -> cfg.smoothBrightness, v -> cfg.smoothBrightness = v);
