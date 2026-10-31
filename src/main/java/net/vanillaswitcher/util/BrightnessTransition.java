@@ -40,7 +40,6 @@ public final class BrightnessTransition {
 
     public void fadeTo(double target, double strength, double seconds, long nowNanos) {
         double current = valueAt(nowNanos);
-
         double fullSwing = Math.max(Math.max(strength, target), current) - VANILLA;
         double safeSeconds = Math.max(0.05, seconds);
         startTowards(target, fullSwing / safeSeconds, nowNanos);

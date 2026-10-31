@@ -4,6 +4,7 @@ public enum Text {
     TITLE("Vanilla Switcher", "Vanilla Switcher", "Vanilla Switcher"),
 
     SECTION_VISUALS("Visuals", "Визуальные эффекты", "Визуалы"),
+    SECTION_ACCESSIBILITY("Accessibility Settings", "Настройки специальных возможностей", "Спец. возможности"),
     SECTION_BRIGHTNESS("Brightness", "Яркость", "Яркость"),
     SECTION_RENDER_DISTANCE("Render Distance", "Дальность прорисовки", "Прорисовка чанков"),
     SECTION_TOTEM("Totem", "Тотем", "Тотем"),
@@ -12,6 +13,11 @@ public enum Text {
 
     PARTICLES("Particles", "Частицы", "Партиклы"),
     NO_FOG("No Fog (all types)", "Туман (все типы)", "Туман (все типы)"),
+    VIEW_BOBBING("View Bobbing", "Покачивание камеры", "Боббинг камеры"),
+    DISTORTION_EFFECTS("Distortion Effects", "Эффекты искажения", "Эффекты искажения"),
+    FOV_EFFECTS("FOV Effects", "Эффекты поля зрения", "ФОВ эффекты"),
+    DARKNESS_PULSING("Darkness Pulsing", "Пульсация тьмы", "Пульсация тьмы"),
+    DAMAGE_TILT("Damage Tilt", "Наклон при уроне", "Наклон от урона"),
 
     SMOOTH_FULLBRIGHT("Smooth Fullbright", "Полная яркость", "Яркость"),
     FULLBRIGHT_STRENGTH("Fullbright Strength", "Сила яркости", "Сила яркости"),
@@ -31,7 +37,6 @@ public enum Text {
     FIRE_SHIELD_OFFSETS("Fire/Shield Offsets", "Смещение огня/щита", "Оффсэт огня/щита"),
     ARMOR_HUD("Armor HUD", "Индикатор брони", "HUD брони"),
     ALERT_TOAST("Alert Toast", "Уведомление", "Уведомление"),
-
     SMOOTH_LIGHTING_SWITCH("Smooth Lighting Switch", "Плавное освещение", "Плавное освещение"),
 
     DONE("Done", "Готово", "Готово"),
@@ -40,9 +45,7 @@ public enum Text {
     OFF("OFF", "ВЫКЛ", "ВЫКЛ"),
     PRESS_A_KEY("Press a key...", "Нажмите клавишу…", "Выберите бинд…"),
     NOT_BOUND("Not bound", "Не назначена", "Не назначен"),
-
     SECONDS_SUFFIX("s", " с", " с"),
-
     STRENGTH_SUFFIX("/15", "/15", "/15");
 
     private final String english;

@@ -14,6 +14,7 @@ While the mod is **on**:
 | --- | --- |
 | **Particles** | Blocks particles from spawning, explosions included (vanilla's "Minimal" setting still shows those). Firework sparks are the one exception: vanilla crashes if they are blocked, so they stay visible. |
 | **No Fog** | Removes all fog: atmospheric, water, lava, powder snow, blindness and darkness. |
+| **Accessibility Settings** | Five separate switches: View Bobbing is turned off, and Distortion Effects, FOV Effects, Darkness Pulsing and Damage Tilt are set from their current value to 0%. Your own values come back when the preset is switched off. A switch that is off leaves that vanilla setting alone. All five are on by default. |
 | **Fire/Shield Offsets** | Lowers the first-person fire overlay and the shield. |
 | **Armor HUD** | Shows your worn armor next to the hotbar. It steps aside for the offhand slot and the attack indicator, and dims together with the hotbar when a menu is open. |
 | **Smooth Lighting Switch** | When on, activating the preset turns vanilla's "Smooth Lighting" off (sharper blocks for PvP), and deactivating turns it back on. When off, the mod never touches it. |
@@ -37,16 +38,17 @@ Both binds work only while no menu is open.
 
 ## Settings screen
 
-The settings are grouped into six sections, each with a plain text header like the ones on
+The settings are grouped into seven sections, each with a plain text header like the ones on
 vanilla's own Video Settings screen (e.g. "Display", "Quality & Performance"):
 
 1. **Visuals**: Particles, No Fog, Fire/Shield Offsets, Armor HUD, Smooth Lighting Switch - the
    short-labeled toggles sit two to a row, like vanilla's own Quality & Performance grid
-2. **Brightness**: Smooth Fullbright, Fullbright Strength, Brightness Transition
-3. **Render Distance**: Render Distance Switch, Render Distance (mod ON), Render Distance (mod OFF)
-4. **Totem**: Totem Resize, Totem Size, Totem Pop Size
-5. **Others**: Alert Toast, Language
-6. **Binds**: Activate bind, Open menu bind
+2. **Accessibility Settings**: View Bobbing, Distortion Effects, FOV Effects, Darkness Pulsing, Damage Tilt
+3. **Brightness**: Smooth Fullbright, Fullbright Strength, Brightness Transition
+4. **Render Distance**: Render Distance Switch, Render Distance (mod ON), Render Distance (mod OFF)
+5. **Totem**: Totem Resize, Totem Size, Totem Pop Size
+6. **Others**: Alert Toast, Language
+7. **Binds**: Activate bind, Open menu bind
 
 ### Languages
 
@@ -58,7 +60,7 @@ line per label with one column per language, so translations are easy to adjust.
 
 Settings are saved to `config/vanillaswitcher.json` when the settings screen is closed.
 
-Brightness and render-distance settings are applied when the preset is switched on or off;
+Brightness, render-distance and accessibility settings are applied when the preset is switched on or off;
 everything else takes effect immediately.
 
 ## Installation
@@ -76,7 +78,7 @@ Requires JDK 25.
 gradle build
 ```
 
-The jar is written to `build/libs/`.
+The jar is written to `build/libs/` (named like `vanillaswitcher-2.5.0+mc26.3.jar`).
 
 ## Credits
 

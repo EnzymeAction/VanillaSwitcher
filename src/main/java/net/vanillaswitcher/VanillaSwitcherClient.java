@@ -26,7 +26,6 @@ public class VanillaSwitcherClient implements ClientModInitializer {
 
     public enum BindTarget {
         ACTIVATE,
-
         MENU
     }
 
@@ -34,11 +33,15 @@ public class VanillaSwitcherClient implements ClientModInitializer {
     private static boolean active = false;
     private static boolean activateWasDown = false;
     private static boolean menuWasDown = false;
-
     private static BindTarget listeningFor = null;
 
     private static Object prevParticles = null;
     private static int prevRenderDistance = -1;
+    private static Boolean prevBobView = null;
+    private static Double prevScreenEffectScale = null;
+    private static Double prevFovEffectScale = null;
+    private static Double prevDarknessEffectScale = null;
+    private static Double prevDamageTiltStrength = null;
 
     private static final BrightnessTransition brightness = new BrightnessTransition();
 
@@ -269,7 +272,55 @@ public class VanillaSwitcherClient implements ClientModInitializer {
             mc.options.ambientOcclusion().set(false);
         }
 
+        applyAccessibility(mc);
+
         fadeBrightness(true);
+    }
+
+    private static void applyAccessibility(Minecraft mc) {
+        if (config.disableViewBobbing) {
+            prevBobView = mc.options.bobView().get();
+            mc.options.bobView().set(false);
+        }
+        if (config.disableDistortionEffects) {
+            prevScreenEffectScale = mc.options.screenEffectScale().get();
+            mc.options.screenEffectScale().set(0.0);
+        }
+        if (config.disableFovEffects) {
+            prevFovEffectScale = mc.options.fovEffectScale().get();
+            mc.options.fovEffectScale().set(0.0);
+        }
+        if (config.disableDarknessPulsing) {
+            prevDarknessEffectScale = mc.options.darknessEffectScale().get();
+            mc.options.darknessEffectScale().set(0.0);
+        }
+        if (config.disableDamageTilt) {
+            prevDamageTiltStrength = mc.options.damageTiltStrength().get();
+            mc.options.damageTiltStrength().set(0.0);
+        }
+    }
+
+    private static void restoreAccessibility(Minecraft mc) {
+        if (prevBobView != null) {
+            mc.options.bobView().set(prevBobView);
+            prevBobView = null;
+        }
+        if (prevScreenEffectScale != null) {
+            mc.options.screenEffectScale().set(prevScreenEffectScale);
+            prevScreenEffectScale = null;
+        }
+        if (prevFovEffectScale != null) {
+            mc.options.fovEffectScale().set(prevFovEffectScale);
+            prevFovEffectScale = null;
+        }
+        if (prevDarknessEffectScale != null) {
+            mc.options.darknessEffectScale().set(prevDarknessEffectScale);
+            prevDarknessEffectScale = null;
+        }
+        if (prevDamageTiltStrength != null) {
+            mc.options.damageTiltStrength().set(prevDamageTiltStrength);
+            prevDamageTiltStrength = null;
+        }
     }
 
     private static void restoreVanillaMode(Minecraft mc) {
@@ -285,6 +336,8 @@ public class VanillaSwitcherClient implements ClientModInitializer {
         if (config.smoothLightingSwitch) {
             mc.options.ambientOcclusion().set(true);
         }
+
+        restoreAccessibility(mc);
 
         fadeBrightness(false);
     }
