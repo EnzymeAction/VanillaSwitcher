@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Moves the first-person fire overlay down (the "low fire" effect). */
 @Mixin(ScreenEffectRenderer.class)
 public class MixinScreenEffectRenderer {
 

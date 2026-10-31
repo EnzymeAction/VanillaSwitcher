@@ -6,13 +6,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-/**
- * BactroMod-style fullbright for 26.2.
- *
- * BactroMod modifies the fifth lightmap gamma-multiplier argument in
- * Lightmap#render rather than changing Options.gamma(). We do the same,
- * but animate the multiplier from 1 to the configured crystal value.
- */
 @Mixin(Lightmap.class)
 public class MixinLightTexture {
 

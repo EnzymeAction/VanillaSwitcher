@@ -22,12 +22,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.material.FogType;
 
-/**
- * Suppresses every kind of fog (lava, powder snow, blindness, darkness, water,
- * atmospheric) behind a single toggle. Injection point, field names and the
- * FogData reset values are copied directly from BactroMod's own MixinFogRenderer,
- * which is a real, currently-maintained mod confirmed to work on Minecraft 26.2.
- */
 @Mixin(value = FogRenderer.class, priority = 1500)
 public abstract class MixinFogRenderer {
 
@@ -51,8 +45,6 @@ public abstract class MixinFogRenderer {
                 fog.renderDistanceStart = Float.MAX_VALUE;
                 fog.renderDistanceEnd = Float.MAX_VALUE;
 
-                // atmospheric fog (index 5) still needs a sane sky/cloud cutoff,
-                // everything else can just be pushed out to "never happens".
                 fog.skyEnd = i == 5 ? Mth.clamp(renderDistanceInBlocks, 2 * 16, 32 * 16) : Float.MAX_VALUE;
                 fog.cloudEnd = i == 5 ? Minecraft.getInstance().options.cloudRange().get() * 16 : Float.MAX_VALUE;
 
