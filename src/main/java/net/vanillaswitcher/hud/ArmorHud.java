@@ -15,38 +15,19 @@ import net.vanillaswitcher.mixin.HudAccessor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Row of the player's worn armor pieces drawn flush against the left side of the
- * hotbar, using vanilla's own hotbar-slot background sprite - same layout style
- * as uku3lig's armor-hud mod (HOTBAR anchor, LEFT side, horizontal).
- * <p>
- * Like uku's mod (its default "Offhand Slot: ADHERE" behaviour) the row steps aside
- * when something else is drawn on that side of the hotbar - the offhand slot, or the
- * attack indicator for left-handed players - instead of covering it.
- */
 public final class ArmorHud {
 
     private static final int SIZE = 22;
     private static final int STEP = 20;
     private static final int HOTBAR_OFFSET = 98;
-    /** Width vanilla's offhand slot takes up next to the hotbar (uku: OFFHAND_OFFSET). */
+
     private static final int OFFHAND_OFFSET = 29;
-    /** Width of the hotbar attack-indicator (uku: ATTACK_INDICATOR_OFFSET). */
+
     private static final int ATTACK_INDICATOR_OFFSET = 23;
 
     private ArmorHud() {
     }
 
-    /**
-     * How much further left of the hotbar the row has to sit right now. This is uku's
-     * ADHERE logic for a left-side widget anchored to the hotbar:
-     * <ul>
-     *   <li>Right-handed (the default): the offhand slot appears on the left of the
-     *       hotbar, but only while the offhand actually holds an item.</li>
-     *   <li>Left-handed: the offhand slot moves to the right side, so the left side is
-     *       instead where the hotbar attack indicator shows up while it's recharging.</li>
-     * </ul>
-     */
     private static int extraHotbarOffset(Minecraft mc, Player player) {
         if (player.getMainArm() == HumanoidArm.LEFT) {
             boolean indicatorShown = mc.options.attackIndicator().get() == AttackIndicatorStatus.HOTBAR
@@ -85,9 +66,7 @@ public final class ArmorHud {
         try {
             hotbarSprite = HudAccessor.vs$hotbarSprite();
         } catch (Throwable t) {
-            // The Hud accessor mixin didn't apply for some reason (e.g. the field
-            // was renamed in a future MC update) - fall back to plain item icons
-            // with no background rather than crashing the HUD render.
+
             hotbarSprite = null;
         }
 

@@ -4,9 +4,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
-/**
- * Small bottom-center notification.
- */
 public final class AlertToast {
 
     private static final long VISIBLE_MS = 1400L;
